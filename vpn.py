@@ -45,7 +45,7 @@ def buy(message):
     )
 
     # Отправляем фото и кнопки с тарифами
-    bot.send_photo(chat_id=message.chat.id, photo=open('./photo_2023-10-30_09-13-28.jpg', 'rb'),
+    bot.send_photo(chat_id=message.chat.id, photo=open('photo_2023-10-30_09-13-28.jpg', 'rb'),
                    caption="Выберите тариф:", reply_markup=inline_keyboard)
 
 
@@ -53,9 +53,9 @@ def buy(message):
 @bot.callback_query_handler(func=lambda call: call.data.startswith('tariff_'))
 def process_tariff_callback(callback_query):
     tariff_info = {
-        "tariff_A": {"title": "Тариф 1 месяц", "description": "Доступ к VPN на 1 месяц", "price": 19000},
+        "tariff_A": {"title": "Тариф 1 месяц", "description": "Доступ к VPN на 1 месяц", "price": 19900},
         "tariff_B": {"title": "Тариф 3 месяца", "description": "Доступ к VPN на 3 месяца", "price": 49900},
-        "tariff_C": {"title": "Тариф 1 год", "description": "Доступ к VPN на 6 месяцев", "price": 179900},
+        "tariff_C": {"title": "Тариф 6 месяцев", "description": "Доступ к VPN на 6 месяцев", "price": 89900},
         "tariff_D": {"title": "Тариф индивидуальный", "description": "Супер тариф с особыми возможностями", "price": 999999}
     }
     tariff_id = callback_query.data
