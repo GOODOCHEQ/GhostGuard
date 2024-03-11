@@ -1,13 +1,13 @@
 import telebot
-import random
-import string
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton, InlineKeyboardButton, InlineKeyboardMarkup
-import openpyxl
 from openpyxl import load_workbook
-from datetime import datetime
+from telebot import types
+import openpyxl
+from datetime import datetime, timedelta
+
 
 # Установите токен вашего бота
-bot = telebot.TeleBot('7066720233:AAFfDpcIls1VYtk-r3ZwNxn-t2ZlMYHuj3Y')
+bot = telebot.TeleBot('5797908031:AAEZGcttLY2rBbm-3jQxGZic8HJ2rANUQMU')
 
 # Путь к файлу Excel
 excel_file_path = 'TELEGA.xlsx'
@@ -183,33 +183,70 @@ def my_orders(message):
     # Получаем id пользователя
     user_id = message.from_user.id
 
-    # Путь к файлу Excel
-    excel_file_path = 'TELEGA.xlsx'
-
-    # Загружаем файл Excel
-    wb = load_workbook(excel_file_path)
-    sheet = wb.active
+    # Пути к файлам Excel
+    excel_file_paths = ['TELEGA.xlsx', 'users.xlsx']
 
     # Создаем список для хранения всех заказов пользователя
     user_orders = []
 
-    # Ищем все заказы пользователя
-    for row in sheet.iter_rows(min_row=1, max_row=sheet.max_row, min_col=1, max_col=7):
-        if str(row[1].value) == str(user_id):
-            user_orders.append({
-                "Тариф": row[2].value,
-                "Дата оплаты": row[3].value,  # Не вызываем strftime() здесь
-                "Токен": row[6].value  # Получаем токен из столбца G
-            })
+    # Итерируем по каждому файлу Excel
+    for excel_file_path in excel_file_paths:
+        try:
+            # Загружаем файл Excel
+            wb = load_workbook(excel_file_path)
+            sheet = wb.active
+
+            # Ищем все заказы пользователя
+            for row in sheet.iter_rows(min_row=1, max_row=sheet.max_row, min_col=1, max_col=7):
+                if str(row[1].value) == str(user_id):
+                    user_orders.append({
+                        "Тариф": row[2].value,
+                        "Дата оплаты": row[3].value,  # Не вызываем strftime() здесь
+                        "Токен": row[6].value  # Получаем токен из столбца G
+                    })
+        except FileNotFoundError:
+            # Если файл не найден, продолжаем итерацию
+            continue
 
     # Если найдены заказы пользователя
     if user_orders:
         # Получаем информацию о последнем заказе пользователя
         latest_order = user_orders[-1]
-        order_text = f"Ваш тариф: {latest_order['Тариф']}\nПоследняя дата оплаты: {latest_order['Дата оплаты']}\nВаш токен: {latest_order['Токен']}"
+        tariff = latest_order['Тариф']
+        payment_date_str = latest_order['Дата оплаты']
+        token = latest_order['Токен']
 
-        # Отправляем сообщение с информацией о заказе и токене
-        bot.send_message(user_id, order_text)
+        # Преобразуем строку даты оплаты в объект datetime
+        payment_date = datetime.strptime(payment_date_str, '%Y-%m-%d %H:%M:%S')
+
+        # Вычисляем дату окончания срока действия тарифа
+        if tariff == "Тариф 1 месяц":
+            end_date = payment_date + timedelta(days=30)
+        elif tariff == "Тариф 3 месяца":
+            end_date = payment_date + timedelta(days=90)
+        elif tariff == "Тариф 6 месяцев":
+            end_date = payment_date + timedelta(days=180)
+        elif tariff == "Тест":
+            end_date = payment_date + timedelta(days=5)
+        else:
+            end_date = payment_date  # Если тариф неизвестен, просто выводим дату оплаты
+
+        # Форматируем дату окончания срока действия
+        end_date_str = end_date.strftime('%Y-%m-%d %H:%M:%S')
+
+        # Получаем текущую дату и время
+        current_date = datetime.now()
+
+        # Если текущая дата больше даты окончания срока действия тарифа
+        if current_date > end_date:
+            # Отправляем пользователю сообщение о том, что тариф закончился
+            bot.send_message(user_id, "Ваш тариф закончился, приобретите новый.")
+        else:
+            # Формируем текст сообщения
+            order_text = f"Ваш тариф: {tariff}\nДействует до: {end_date_str}\nВаш токен: {token}"
+
+            # Отправляем сообщение с информацией о заказе и токене
+            bot.send_message(user_id, order_text)
     else:
         bot.send_message(user_id, "У вас нет заказов.")
 
@@ -245,10 +282,87 @@ def about_us(message):
     # Отправляем текст о компании
     bot.send_message(chat_id=message.chat.id, text=about_text)
 
+# ПОПРОБОВАТЬ БЕСПЛАТНО
+def save_to_excel(username, user_id, action):
+    try:
+        wb = openpyxl.load_workbook('users.xlsx')
+        sheet = wb.active
+    except FileNotFoundError:
+        wb = openpyxl.Workbook()
+        sheet = wb.active
+        sheet.append(["Username", "User ID", "Action", "Date"])
+
+    # Ищем первую пустую строку в столбце A
+    next_row = 1
+    while sheet.cell(row=next_row, column=1).value is not None:
+        next_row += 1
+
+    # Записываем данные пользователя в найденную строку
+    sheet.cell(row=next_row, column=1).value = username
+    sheet.cell(row=next_row, column=2).value = user_id
+    sheet.cell(row=next_row, column=3).value = action
+    sheet.cell(row=next_row, column=4).value = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    wb.save('users.xlsx')
+    print("Данные пользователя успешно сохранены:", username, user_id, action)
+
+def get_test_token(username):
+    try:
+        wb = openpyxl.load_workbook('users.xlsx')
+        sheet = wb.active
+
+        for row in sheet.iter_rows(values_only=True):
+            if row[0] == username:
+                return row[6]  # Возвращаем значение из 6 столбца (после 5 столбца)
+    except FileNotFoundError:
+        pass
+
+    return None
+
+
+@bot.message_handler(func=lambda message: message.text == 'Попробовать бесплатно')
+def try_for_free(message):
+    # Проверяем, есть ли уже данные пользователя в файле
+    test_token = get_test_token(message.chat.username)
+
+    if test_token:
+        # Если данные пользователя уже есть, отправляем сообщение о том, что он уже воспользовался бесплатным периодом
+        bot.send_message(message.chat.id, "Извините, вы уже воспользовались бесплатным периодом.")
+    else:
+        # Иначе отправляем сообщение о бесплатной версии и кнопку для получения доступа
+        markup = types.InlineKeyboardMarkup()
+        button = types.InlineKeyboardButton("Получить доступ", callback_data="button_clicked")
+        markup.add(button)
+        bot.send_message(message.chat.id,
+                         "Мы предлагаем тебе уникальную возможность получить бесплатный доступ на 5 дней, чтобы ты мог оценить все преимущества нашего VPN. Получи свой ключ прямо сейчас и наслаждайся безопасным и анонимным интернетом!",
+                         reply_markup=markup)
+
+@bot.callback_query_handler(func=lambda call: call.data == "button_clicked")
+def button_clicked(call):
+    # Сохраняем данные пользователя в файл Excel
+    save_to_excel(call.message.chat.username, call.message.chat.id, "Тест")
+
+    # Получаем дату начала тестового периода и прибавляем 5 дней
+    start_date = datetime.now()
+    end_date = start_date + timedelta(days=5)
+
+    # Формируем сообщение с текстом и датой окончания тестового периода
+    message_text = "Теперь у вас есть тестовый доступ!\nВаш тестовый токен: {}\nДействует до: {}".format(get_test_token(call.message.chat.username), end_date.strftime("%Y-%m-%d"))
+
+    # Создаем инлайн-кнопку для инструкции
+    markup = types.InlineKeyboardMarkup()
+    instruction_button = types.InlineKeyboardButton("Инструкция к подключению", url="https://teletype.in/@ghostguardvpn/xv_6scteadf")
+    markup.add(instruction_button)
+
+    # Отправляем сообщение о нажатии на кнопку с текстом, датой окончания и кнопкой инструкции
+    bot.send_message(call.message.chat.id, message_text, reply_markup=markup)
+
+
+
 # Функция для создания клавиатуры с меню
 def create_menu_keyboard():
     keyboard = ReplyKeyboardMarkup(row_width=2, resize_keyboard=True)  # Установка row_width=2
-    buttons = ["О нас", "Как это работает", "Как оплатить", "Мой VPN", "Поддержка"]
+    buttons = ["О нас", "Как это работает", "Как оплатить", "Попробовать бесплатно", "Мой VPN", "Поддержка"]
     for i in range(0, len(buttons), 2):  # Итерирование по кнопкам попарно
         button_row = buttons[i:i + 2]  # Получение двух кнопок для каждого ряда
         keyboard.add(*[KeyboardButton(text=button) for button in button_row])
