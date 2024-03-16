@@ -345,11 +345,11 @@ def button_clicked(call):
 
     # Отправляем сообщение о нажатии на кнопку с текстом и кнопкой инструкции
     bot.send_message(call.message.chat.id,
-                     "Теперь у вас есть тестовый доступ!\nДействует до: {}".format(end_date.strftime("%Y-%m-%d")),
+                     "Теперь у вас есть тестовый доступ!\nВаш тестовый токен находится в следующем сообщении.\nДействует до: {}".format(end_date.strftime("%Y-%m-%d")),
                      reply_markup=markup)
 
     # Отправляем вторым сообщением тестовый токен
-    bot.send_message(call.message.chat.id, "Ваш тестовый токен: {}".format(get_test_token(call.message.chat.username)))
+    bot.send_message(call.message.chat.id, "{}".format(get_test_token(call.message.chat.username)))
 
 
 
