@@ -193,7 +193,7 @@ def my_orders(message):
     for excel_file_path in excel_file_paths:
         try:
             # Загружаем файл Excel
-            wb = load_workbook(excel_file_path)
+            wb = openpyxl.load_workbook(excel_file_path)
             sheet = wb.active
 
             # Ищем все заказы пользователя
@@ -231,22 +231,14 @@ def my_orders(message):
         else:
             end_date = payment_date  # Если тариф неизвестен, просто выводим дату оплаты
 
-        # Форматируем дату окончания срока действия
-        end_date_str = end_date.strftime('%Y-%m-%d %H:%M:%S')
+        # Формируем текст сообщения о заказе и дате окончания
+        order_text = f"Ваш тариф: {tariff}\nДействует до: {end_date.strftime('%Y-%m-%d %H:%M:%S')}\n Ваш токен:"
 
-        # Получаем текущую дату и время
-        current_date = datetime.now()
+        # Отправляем сообщение с информацией о заказе и дате окончания
+        bot.send_message(user_id, order_text)
 
-        # Если текущая дата больше даты окончания срока действия тарифа
-        if current_date > end_date:
-            # Отправляем пользователю сообщение о том, что тариф закончился
-            bot.send_message(user_id, "Ваш тариф закончился, приобретите новый.")
-        else:
-            # Формируем текст сообщения
-            order_text = f"Ваш тариф: {tariff}\nДействует до: {end_date_str}\nВаш токен: {token}"
-
-            # Отправляем сообщение с информацией о заказе и токене
-            bot.send_message(user_id, order_text)
+        # Отправляем вторым сообщением тестовый токен
+        bot.send_message(user_id, f"{token}")
     else:
         bot.send_message(user_id, "У вас нет заказов.")
 
