@@ -283,6 +283,8 @@ def about_us(message):
     bot.send_message(chat_id=message.chat.id, text=about_text)
 
 # ПОПРОБОВАТЬ БЕСПЛАТНО
+
+# Функция сохранения данных пользователя в файл Excel
 def save_to_excel(username, user_id, action):
     try:
         wb = openpyxl.load_workbook('users.xlsx')
@@ -306,6 +308,7 @@ def save_to_excel(username, user_id, action):
     wb.save('users.xlsx')
     print("Данные пользователя успешно сохранены:", username, user_id, action)
 
+# Функция получения тестового токена пользователя из файла Excel
 def get_test_token(username):
     try:
         wb = openpyxl.load_workbook('users.xlsx')
@@ -319,7 +322,7 @@ def get_test_token(username):
 
     return None
 
-
+# Обработчик команды "Попробовать бесплатно"
 @bot.message_handler(func=lambda message: message.text == 'Попробовать бесплатно')
 def try_for_free(message):
     # Проверяем, есть ли уже данные пользователя в файле
@@ -329,34 +332,28 @@ def try_for_free(message):
         # Если данные пользователя уже есть, отправляем сообщение о том, что он уже воспользовался бесплатным периодом
         bot.send_message(message.chat.id, "Извините, вы уже воспользовались бесплатным периодом.")
     else:
-        # Иначе отправляем сообщение о бесплатной версии и кнопку для получения доступа
+        # Получаем дату начала тестового периода и прибавляем 5 дней
+        start_date = datetime.now()
+        end_date = start_date + timedelta(days=5)
+
+        # Создаем инлайн-кнопку для инструкции
         markup = types.InlineKeyboardMarkup()
-        button = types.InlineKeyboardButton("Получить доступ", callback_data="button_clicked")
-        markup.add(button)
-        bot.send_message(message.chat.id,
-                         "Мы предлагаем тебе уникальную возможность получить бесплатный доступ на 5 дней, чтобы ты мог оценить все преимущества нашего VPN. Получи свой ключ прямо сейчас и наслаждайся безопасным и анонимным интернетом!",
-                         reply_markup=markup)
+        instruction_button = types.InlineKeyboardButton("Инструкция к подключению", url="https://teletype.in/@ghostguardvpn/xv_6scteadf")
+        markup.add(instruction_button)
 
-@bot.callback_query_handler(func=lambda call: call.data == "button_clicked")
-def button_clicked(call):
-    # Сохраняем данные пользователя в файл Excel
-    save_to_excel(call.message.chat.username, call.message.chat.id, "Тест")
+        # Формируем сообщение о доступе и дате окончания
+        message_text = "Теперь у вас есть тестовый доступ!\n\nДействует до: {}".format(end_date.strftime("%Y-%m-%d"))
+        message_text += "\n\nВаш токен находится в сообщении снизу. Для подключения следуйте инструкции:"
 
-    # Получаем дату начала тестового периода и прибавляем 5 дней
-    start_date = datetime.now()
-    end_date = start_date + timedelta(days=5)
+        # Отправляем сообщение с текстом, кнопкой и инструкцией
+        bot.send_message(message.chat.id, message_text, reply_markup=markup)
 
-    # Формируем сообщение с текстом и датой окончания тестового периода
-    message_text = "Теперь у вас есть тестовый доступ!\nВаш тестовый токен: {}\nДействует до: {}".format(get_test_token(call.message.chat.username), end_date.strftime("%Y-%m-%d"))
+        # Сохраняем данные пользователя в файл Excel
+        save_to_excel(message.chat.username, message.chat.id, "Тест")
 
-    # Создаем инлайн-кнопку для инструкции
-    markup = types.InlineKeyboardMarkup()
-    instruction_button = types.InlineKeyboardButton("Инструкция к подключению", url="https://teletype.in/@ghostguardvpn/xv_6scteadf")
-    markup.add(instruction_button)
-
-    # Отправляем сообщение о нажатии на кнопку с текстом, датой окончания и кнопкой инструкции
-    bot.send_message(call.message.chat.id, message_text, reply_markup=markup)
-
+        # Отправляем вторым сообщением тестовый токен
+        test_token_message = "{}".format(get_test_token(message.chat.username))
+        bot.send_message(message.chat.id, test_token_message)
 
 
 # Функция для создания клавиатуры с меню
