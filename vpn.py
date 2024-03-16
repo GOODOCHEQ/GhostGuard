@@ -7,7 +7,7 @@ from datetime import datetime, timedelta
 
 
 # Установите токен вашего бота
-bot = telebot.TeleBot('5797908031:AAEZGcttLY2rBbm-3jQxGZic8HJ2rANUQMU')
+bot = telebot.TeleBot('7199324736:AAG_j6wOSURnCmVMd6wewJ2zcs_e2GR5LYs')
 
 # Путь к файлу Excel
 excel_file_path = 'TELEGA.xlsx'
@@ -45,7 +45,7 @@ def buy(message):
     )
 
     # Отправляем фото и кнопки с тарифами
-    bot.send_photo(chat_id=message.chat.id, photo=open('photo_2023-10-30_09-13-28.jpg', 'rb'),
+    bot.send_photo(chat_id=message.chat.id, photo=open('photo_2023-10-30_09-13-28.png', 'rb'),
                    caption="Выберите тариф:", reply_markup=inline_keyboard)
 
 
@@ -75,7 +75,7 @@ def process_tariff_callback(callback_query):
         bot.send_invoice(callback_query.from_user.id,
                          title=selected_tariff["title"],
                          description=selected_tariff["description"],
-                         provider_token='390540012:LIVE:47653',  # Замените на ваш провайдерский токен
+                         provider_token='390540012:LIVE:47665',  # Замените на ваш провайдерский токен
                          currency='RUB',  # Валюта (можно изменить на другую поддерживаемую)
                          prices=[telebot.types.LabeledPrice(label='Цена', amount=selected_tariff["price"])],
                          invoice_payload='payload')
@@ -243,6 +243,7 @@ def my_orders(message):
         bot.send_message(user_id, "У вас нет заказов.")
 
 
+
 # Обработчик команды "Поддержка"
 @bot.message_handler(func=lambda message: message.text == 'Поддержка')
 def support(message):
@@ -350,6 +351,7 @@ def button_clicked(call):
 
     # Отправляем вторым сообщением тестовый токен
     bot.send_message(call.message.chat.id, "{}".format(get_test_token(call.message.chat.username)))
+
 
 
 
